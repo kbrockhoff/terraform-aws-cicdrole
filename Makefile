@@ -42,13 +42,6 @@ check: ## Run Terraform validation on all modules and examples
 	@echo "$(CYAN)Validating Terraform configuration...$(RESET)"
 	@terraform fmt -check -recursive || (echo "$(RED)✗ Code formatting issues found$(RESET)" && exit 1)
 	@echo "$(GREEN)✓ Code formatting OK$(RESET)"
-	@for dir in modules/*/; do \
-		if [ -f "$$dir/main.tf" ] || [ -f "$$dir/variables.tf" ] || [ -f "$$dir/outputs.tf" ]; then \
-			echo "$(CYAN)Validating $$dir...$(RESET)"; \
-			(cd "$$dir" && terraform init -backend=false && terraform validate) || exit 1; \
-			echo "$(GREEN)✓ $$dir validation passed$(RESET)"; \
-		fi; \
-	done
 	@for dir in examples/*/; do \
 		echo "$(CYAN)Validating $$dir...$(RESET)"; \
 		(cd "$$dir" && terraform init -backend=false && terraform validate) || exit 1; \

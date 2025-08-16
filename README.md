@@ -1,50 +1,11 @@
-# Brockhoff Cloud Terraform Module
+# AWS Role for CI/CD Pipeline Terraform Module
 
-> **📋 Template Setup Instructions**
->
-> After cloning this template repository, complete these setup steps:
->
-> 1. **Configure GitHub repository settings:**
->    - Under **Settings → Actions → General**
->      - Enable **Allow all actions and reusable workflows**
->      - Set **Workflow permissions** to "Read and write permissions"
->      - Enable **Workflow permissions** "Allow GitHub Actions to create and approve pull requests"
->
-> 2. **Configure repository secrets:**
->    - Under **Settings → Environments**
->      - Create `development` environment
->      - Add `AWS_ROLE_ARN` secret for GitHub Actions AWS access to your AWS development account
->    - Under **Settings → Secrets and variables → Actions → Repository secrets**
->      - Add `RELEASE_PLEASE_TOKEN` secret (Personal Access Token with repo permissions)
->    - For AWS authentication, ensure your IAM role has cross-account trust with GitHub OIDC
->
-> 3. **Configure main branch protection:**
->    - Under **Settings → Rules → Rulesets**
->      - Create new ruleset which applies to default branch and is set to Active
->      - Enable **Require a pull request before merging**
->      - Enable other rules as needed for your workflow
->
-> 4. **Replace placeholder text:**
->    - Find and replace all instances of `replace-me` with your actual module name
->    - Find and replace all instances of `replace` with appropriate values
->    - Update `CLOUD` and `XXX` placeholders with your target cloud provider and resources
->
-> 5. **Update module metadata:**
->    - Modify `locals.tf` → `ModuleName` to match your module using Terraform registry naming conventions
->    - Update repository URLs and documentation
->    - Customize examples and tests for your specific resources
-
-Terraform module which creates XXX resources on CLOUD. It takes an opinionated 
-approach to resource placement, naming, tagging, and well-architected best 
-practices.
+Terraform module which an IAM Role on AWS which trusts CI/CD system OIDC provider.
 
 ## Features
 
-- Feature 1
-- Feature 2
-- Feature 3
-- Monthly cost estimate submodule
-- Deployment pipeline least privilege IAM role submodule
+- Provisions role which trusts CI/CD system OIDC provider
+- Provisions policy which enables role to use Terraform S3 backend
 
 ## Usage
 
@@ -52,7 +13,7 @@ practices.
 
 ```hcl
 module "example" {
-  source = "path/to/terraform-module"
+  source = "kbrockhoff/cicdrole/aws"
 
   # ... other required arguments ...
 }
@@ -62,7 +23,7 @@ module "example" {
 
 ```hcl
 module "example" {
-  source = "path/to/terraform-module"
+  source = "kbrockhoff/cicdrole/aws"
 
   # ... all available arguments ...
 }
@@ -149,48 +110,31 @@ This eliminates the need to manage different subnet IDs variable values for each
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.6.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 
 ## Modules
 
-| Name | Source | Version |
-|------|--------|---------|
-| <a name="module_pricing"></a> [pricing](#module\_pricing) | ./modules/pricing | n/a |
+No modules.
 
 ## Resources
 
 | Name | Type |
 |------|------|
-| [aws_kms_alias.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_alias) | resource |
-| [aws_kms_key.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
-| [aws_sns_topic.alarms](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Organization unique prefix to use for resource names. Recommend including environment and region. e.g. 'prod-usw2' | `string` | n/a | yes |
-| <a name="input_alarms_config"></a> [alarms\_config](#input\_alarms\_config) | Configuration object for metric alarms and notifications | <pre>object({<br/>    enabled          = bool<br/>    create_sns_topic = bool<br/>    sns_topic_arn    = string<br/>  })</pre> | <pre>{<br/>  "create_sns_topic": true,<br/>  "enabled": false,<br/>  "sns_topic_arn": ""<br/>}</pre> | no |
-| <a name="input_cost_estimation_config"></a> [cost\_estimation\_config](#input\_cost\_estimation\_config) | Configuration object for monthly cost estimation | <pre>object({<br/>    enabled = bool<br/>  })</pre> | <pre>{<br/>  "enabled": true<br/>}</pre> | no |
 | <a name="input_data_tags"></a> [data\_tags](#input\_data\_tags) | Additional tags to apply specifically to data storage resources (e.g., S3, RDS, EBS) beyond the common tags. | `map(string)` | `{}` | no |
 | <a name="input_enabled"></a> [enabled](#input\_enabled) | Set to false to prevent the module from creating any resources | `bool` | `true` | no |
-| <a name="input_encryption_config"></a> [encryption\_config](#input\_encryption\_config) | Configuration object for encryption settings and KMS key management | <pre>object({<br/>    create_kms_key               = bool<br/>    kms_key_id                   = string<br/>    kms_key_deletion_window_days = number<br/>  })</pre> | <pre>{<br/>  "create_kms_key": true,<br/>  "kms_key_deletion_window_days": 14,<br/>  "kms_key_id": ""<br/>}</pre> | no |
 | <a name="input_environment_type"></a> [environment\_type](#input\_environment\_type) | Environment type for resource configuration defaults. Select 'None' to use individual config values. | `string` | `"Development"` | no |
-| <a name="input_monitoring_config"></a> [monitoring\_config](#input\_monitoring\_config) | Configuration object for optional monitoring | <pre>object({<br/>    enabled = bool<br/>  })</pre> | <pre>{<br/>  "enabled": false<br/>}</pre> | no |
 | <a name="input_networktags_name"></a> [networktags\_name](#input\_networktags\_name) | Name of the network tags key used for subnet classification | `string` | `"NetworkTags"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags/labels to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs
 
-| Name | Description |
-|------|-------------|
-| <a name="output_alarm_sns_topic_arn"></a> [alarm\_sns\_topic\_arn](#output\_alarm\_sns\_topic\_arn) | ARN of the SNS topic used for alarm notifications |
-| <a name="output_alarm_sns_topic_name"></a> [alarm\_sns\_topic\_name](#output\_alarm\_sns\_topic\_name) | Name of the SNS topic used for alarm notifications |
-| <a name="output_cost_breakdown"></a> [cost\_breakdown](#output\_cost\_breakdown) | Detailed breakdown of monthly costs by service |
-| <a name="output_kms_alias_name"></a> [kms\_alias\_name](#output\_kms\_alias\_name) | Name of the KMS key alias |
-| <a name="output_kms_key_arn"></a> [kms\_key\_arn](#output\_kms\_key\_arn) | ARN of the KMS key used for encryption |
-| <a name="output_kms_key_id"></a> [kms\_key\_id](#output\_kms\_key\_id) | ID of the KMS key used for encryption |
-| <a name="output_monthly_cost_estimate"></a> [monthly\_cost\_estimate](#output\_monthly\_cost\_estimate) | Estimated monthly cost in USD for module resources |
+No outputs.
 <!-- END_TF_DOCS -->    
 
 ## License
