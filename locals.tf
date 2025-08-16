@@ -56,4 +56,117 @@ locals {
 
   name_prefix = var.name_prefix
 
+  # CI/CD Provider configuration map
+  cicd_providers_map = {
+    # https://token.actions.githubusercontent.com/.well-known/openid-configuration
+    "github-actions" = {
+      oidc_url       = "token.actions.githubusercontent.com"
+      oidc_supported = true
+      sub_value      = ["repo:${var.git_provider_org}/${var.git_repo}:*"]
+    }
+
+    # https://gitlab.com/.well-known/openid-configuration
+    "gitlab-ci" = {
+      oidc_url       = "gitlab.com"
+      oidc_supported = true
+      sub_value      = ["project_path:${var.git_provider_org}/${var.git_repo}:*"]
+    }
+
+    # Bitbucket uses OAuth 2.0, requires workspace ID
+    "bitbucket-pipelines" = {
+      oidc_url       = "api.bitbucket.org/2.0/workspaces/${local.cicd_provider_org}/pipelines-config/identity/oidc"
+      oidc_supported = true
+      sub_value      = ["${var.git_provider_org}/${var.git_repo}:*"]
+    }
+
+    # https://oidc.circleci.com/org/{org-id}/.well-known/openid-configuration
+    "circleci" = {
+      oidc_url       = "oidc.circleci.com/org/${local.cicd_provider_org}"
+      oidc_supported = true
+      sub_value      = ["org/${var.git_provider_org}/project/${var.git_repo}/*"]
+    }
+
+    # https://app.vstoken.visualstudio.com/{tenantId}/.well-known/openid-configuration
+    "azure-devops" = {
+      oidc_url       = "app.vstoken.visualstudio.com/${local.cicd_provider_org}"
+      oidc_supported = true
+      sub_value      = ["sc://${var.git_provider_org}/${var.git_repo}/*"]
+    }
+
+    # Jenkins acts as OIDC client, not provider
+    "jenkins" = {
+      oidc_url       = "jenkins.io"
+      oidc_supported = false
+      sub_value      = []
+    }
+
+    # Travis CI doesn't have documented OIDC provider support
+    "travis-ci" = {
+      oidc_url       = "oidc.travis-ci.com"
+      oidc_supported = false
+      sub_value      = []
+    }
+
+    # Buildkite has OIDC support, uses organization slug
+    "buildkite" = {
+      oidc_url       = "agent.buildkite.com/${local.cicd_provider_org}"
+      oidc_supported = true
+      sub_value      = ["organization:${var.git_provider_org}:pipeline:${var.git_repo}:*"]
+    }
+
+    # AWS CodeBuild uses IAM/STS, not an OIDC provider
+    "codebuild" = {
+      oidc_url       = "codebuild.amazonaws.com"
+      oidc_supported = false
+      sub_value      = []
+    }
+
+    # https://app.harness.io/.well-known/openid-configuration
+    "harness" = {
+      oidc_url       = "app.harness.io"
+      oidc_supported = true
+      sub_value      = ["${var.git_provider_org}/${var.git_repo}:*"]
+    }
+
+    # TeamCity integrates with external OIDC providers, not a provider itself
+    "teamcity" = {
+      oidc_url       = "teamcity.jetbrains.com"
+      oidc_supported = false
+      sub_value      = []
+    }
+
+    # Drone CI OIDC provider capabilities not documented
+    "drone-ci" = {
+      oidc_url       = "drone.io"
+      oidc_supported = false
+      sub_value      = []
+    }
+  }
+
+  # Use cicd_provider_org if provided, otherwise fall back to git_provider_org
+  cicd_provider_org = var.cicd_provider_org != "" ? var.cicd_provider_org : var.git_provider_org
+
+  # Selected OIDC provider URL based on cicd_provider variable
+  selected_oidc_provider = local.cicd_providers_map[var.cicd_provider].oidc_url
+
+  # Check if the selected provider supports OIDC
+  provider_supports_oidc = local.cicd_providers_map[var.cicd_provider].oidc_supported
+
+  # Determine if we should create the OIDC provider
+  should_create_oidc = var.enabled && var.create_oidc_provider && !var.manage_oidc_provider && local.provider_supports_oidc
+
+  # Determine if we should manage (import) the OIDC provider
+  should_manage_oidc = var.enabled && var.manage_oidc_provider && local.provider_supports_oidc
+
+  # OIDC provider ARN - managed, created, or provided
+  oidc_provider_arn = var.enabled ? (
+    local.should_manage_oidc ? (
+      aws_iam_openid_connect_provider.managed[0].arn
+      ) : (
+      local.should_create_oidc ? (
+        aws_iam_openid_connect_provider.cicd[0].arn
+      ) : var.oidc_provider_arn
+    )
+  ) : ""
+
 }

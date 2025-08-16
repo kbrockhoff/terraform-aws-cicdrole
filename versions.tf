@@ -7,6 +7,10 @@ terraform {
       version               = ">= 5.0"
       configuration_aliases = [aws.pricing]
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0"
+    }
   }
 }
 

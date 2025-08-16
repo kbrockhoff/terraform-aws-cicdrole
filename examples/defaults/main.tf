@@ -17,7 +17,8 @@ module "main" {
     aws.pricing = aws.pricing
   }
 
-  name_prefix = var.name_prefix
+  name_prefix      = var.name_prefix
+  git_provider_org = "example-org"
   tags = {
     Example = "defaults"
   }

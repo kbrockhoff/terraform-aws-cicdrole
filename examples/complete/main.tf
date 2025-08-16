@@ -19,6 +19,7 @@ module "main" {
 
   enabled          = var.enabled
   name_prefix      = var.name_prefix
+  git_provider_org = "example-org"
   tags             = var.tags
   data_tags        = var.data_tags
   environment_type = var.environment_type
