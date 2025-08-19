@@ -1,25 +1,20 @@
 # Main AWS provider - uses the current region
 provider "aws" {
-  # This is the default provider used for VPC resources
-}
-
-# Pricing provider - always uses us-east-1 where the AWS Pricing API is available
-provider "aws" {
-  alias  = "pricing"
-  region = "us-east-1"
+  # This is the default provider used for resources
 }
 
 module "main" {
   source = "../../"
 
-  providers = {
-    aws         = aws
-    aws.pricing = aws.pricing
-  }
-
   enabled          = var.enabled
   name_prefix      = var.name_prefix
+  cicd_provider    = "bitbucket-pipelines"
   git_provider_org = "example-org"
+  s3_backend_config = {
+    enabled        = true
+    bucket_arn     = ""
+    lock_table_arn = ""
+  }
   tags             = var.tags
   data_tags        = var.data_tags
   environment_type = var.environment_type

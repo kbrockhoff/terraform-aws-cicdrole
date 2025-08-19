@@ -69,15 +69,15 @@ test: check-aws ## Run all tests
 	@cd test && go test -v -timeout 30m -parallel 4
 	@echo "$(GREEN)✓ All tests passed$(RESET)"
 
-test-defaults: check-aws ## Run only defaults example test
-	@echo "$(CYAN)Running defaults test...$(RESET)"
-	@cd test && go test -v -timeout 15m -run TestTerraformDefaultsExample
-	@echo "$(GREEN)✓ Defaults test passed$(RESET)"
+test-github-actions: check-aws ## Run only github-actions example test
+	@echo "$(CYAN)Running github-actions test...$(RESET)"
+	@cd test && go test -v -timeout 15m -run TestTerraformGitHubActionsExample
+	@echo "$(GREEN)✓ GitHub Actions test passed$(RESET)"
 
-test-complete: check-aws ## Run only complete example test
-	@echo "$(CYAN)Running complete test...$(RESET)"
-	@cd test && go test -v -timeout 15m -run TestTerraformCompleteExample
-	@echo "$(GREEN)✓ Complete test passed$(RESET)"
+test-bitbucket: check-aws ## Run only bitbucket example test
+	@echo "$(CYAN)Running bitbucket test...$(RESET)"
+	@cd test && go test -v -timeout 15m -run TestTerraformBitbucketExample
+	@echo "$(GREEN)✓ Bitbucket test passed$(RESET)"
 
 test-enabled-false: check-aws ## Run only enabled=false test
 	@echo "$(CYAN)Running enabled=false test...$(RESET)"

@@ -76,9 +76,13 @@ variable "cicd_provider" {
       "codebuild",
       "harness",
       "teamcity",
-      "drone-ci"
+      "drone-ci",
+      "terraform-cloud",
+      "terraform-enterprise",
+      "scalr",
+      "spacelift"
     ], var.cicd_provider)
-    error_message = "CI/CD provider must be one of: github-actions, gitlab-ci, bitbucket-pipelines, circleci, azure-devops, jenkins, travis-ci, buildkite, codebuild, harness, teamcity, drone-ci."
+    error_message = "CI/CD provider must be one of: github-actions, gitlab-ci, bitbucket-pipelines, circleci, azure-devops, jenkins, travis-ci, buildkite, codebuild, harness, teamcity, drone-ci, terraform-cloud, terraform-enterprise, scalr, spacelift."
   }
 }
 
@@ -116,8 +120,38 @@ variable "git_provider_org" {
   type        = string
 }
 
-variable "git_repo" {
-  description = "Git repository name or pattern for OIDC trust policy. Use '*' to allow all repositories in the organization"
+variable "git_repos" {
+  description = "List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization"
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "deployment_environment" {
+  description = "Deployment environment name for OIDC trust policy (e.g., 'production', 'staging', 'development'). Used in sub claim conditions for providers that support environment-based claims"
   type        = string
-  default     = "*"
+  default     = ""
+}
+
+variable "assume_role_policy" {
+  description = "Custom assume role policy JSON. Used for providers that don't support OIDC and aren't AWS CodeBuild. If empty, module will generate appropriate policy"
+  type        = string
+  default     = ""
+}
+
+# ----
+# Terraform Backend Configuration
+# ----
+
+variable "s3_backend_config" {
+  description = "Configuration for Terraform S3 backend access permissions"
+  type = object({
+    enabled        = bool
+    bucket_arn     = string
+    lock_table_arn = string
+  })
+  default = {
+    enabled        = true
+    bucket_arn     = ""
+    lock_table_arn = ""
+  }
 }

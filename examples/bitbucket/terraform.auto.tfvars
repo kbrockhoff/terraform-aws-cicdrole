@@ -1,8 +1,8 @@
 enabled     = true
-name_prefix = "complete-ex"
+name_prefix = "bitbucket-ex"
 tags = {
   "Environment" = "Production"
-  "Example"     = "complete"
+  "Example"     = "bitbucket"
 }
 data_tags = {
   "DataClassification" = "Confidential"

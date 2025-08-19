@@ -111,8 +111,8 @@ This eliminates the need to manage different subnet IDs variable values for each
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
-| <a name="provider_tls"></a> [tls](#provider\_tls) | >= 4.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.9.0 |
+| <a name="provider_tls"></a> [tls](#provider\_tls) | 4.1.0 |
 
 ## Modules
 
@@ -133,16 +133,19 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_git_provider_org"></a> [git\_provider\_org](#input\_git\_provider\_org) | Git provider organization/username (e.g., GitHub org, GitLab group). Required for most OIDC trust policies | `string` | n/a | yes |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Organization unique prefix to use for resource names. Recommend including environment and region. e.g. 'prod-usw2' | `string` | n/a | yes |
+| <a name="input_assume_role_policy"></a> [assume\_role\_policy](#input\_assume\_role\_policy) | Custom assume role policy JSON. Used for providers that don't support OIDC and aren't AWS CodeBuild. If empty, module will generate appropriate policy | `string` | `""` | no |
 | <a name="input_cicd_provider"></a> [cicd\_provider](#input\_cicd\_provider) | CI/CD platform provider for OIDC trust relationship | `string` | `"github-actions"` | no |
 | <a name="input_cicd_provider_org"></a> [cicd\_provider\_org](#input\_cicd\_provider\_org) | Organization ID for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace). If blank, uses git\_provider\_org | `string` | `""` | no |
 | <a name="input_create_oidc_provider"></a> [create\_oidc\_provider](#input\_create\_oidc\_provider) | Whether to create the OIDC provider resource. If false, oidc\_provider\_arn must be provided | `bool` | `true` | no |
 | <a name="input_data_tags"></a> [data\_tags](#input\_data\_tags) | Additional tags to apply specifically to data storage resources (e.g., S3, RDS, EBS) beyond the common tags. | `map(string)` | `{}` | no |
+| <a name="input_deployment_environment"></a> [deployment\_environment](#input\_deployment\_environment) | Deployment environment name for OIDC trust policy (e.g., 'production', 'staging', 'development'). Used in sub claim conditions for providers that support environment-based claims | `string` | `""` | no |
 | <a name="input_enabled"></a> [enabled](#input\_enabled) | Set to false to prevent the module from creating any resources | `bool` | `true` | no |
 | <a name="input_environment_type"></a> [environment\_type](#input\_environment\_type) | Environment type for resource configuration defaults. Select 'None' to use individual config values. | `string` | `"Development"` | no |
-| <a name="input_git_repo"></a> [git\_repo](#input\_git\_repo) | Git repository name or pattern for OIDC trust policy. Use '*' to allow all repositories in the organization | `string` | `"*"` | no |
+| <a name="input_git_repos"></a> [git\_repos](#input\_git\_repos) | List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization | `list(string)` | <pre>[<br/>  "*"<br/>]</pre> | no |
 | <a name="input_manage_oidc_provider"></a> [manage\_oidc\_provider](#input\_manage\_oidc\_provider) | Whether to manage (import) an existing OIDC provider. Takes precedence over create\_oidc\_provider | `bool` | `false` | no |
 | <a name="input_networktags_name"></a> [networktags\_name](#input\_networktags\_name) | Name of the network tags key used for subnet classification | `string` | `"NetworkTags"` | no |
 | <a name="input_oidc_provider_arn"></a> [oidc\_provider\_arn](#input\_oidc\_provider\_arn) | ARN of an existing OIDC provider. Required if create\_oidc\_provider is false | `string` | `""` | no |
+| <a name="input_s3_backend_config"></a> [s3\_backend\_config](#input\_s3\_backend\_config) | Configuration for Terraform S3 backend access permissions | <pre>object({<br/>    enabled        = bool<br/>    bucket_arn     = string<br/>    lock_table_arn = string<br/>  })</pre> | <pre>{<br/>  "bucket_arn": "",<br/>  "enabled": true,<br/>  "lock_table_arn": ""<br/>}</pre> | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags/labels to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs

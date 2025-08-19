@@ -62,101 +62,170 @@ locals {
     "github-actions" = {
       oidc_url       = "token.actions.githubusercontent.com"
       oidc_supported = true
-      sub_value      = ["repo:${var.git_provider_org}/${var.git_repo}:*"]
+      aud_value      = "sts.amazonaws.com"
+      sub_values = var.deployment_environment != "" ? flatten([
+        for repo in var.git_repos : "repo:${var.git_provider_org}/${repo}:environment:${var.deployment_environment}"
+        ]) : flatten([
+        for repo in var.git_repos : "repo:${var.git_provider_org}/${repo}:*"
+      ])
     }
 
     # https://gitlab.com/.well-known/openid-configuration
     "gitlab-ci" = {
       oidc_url       = "gitlab.com"
       oidc_supported = true
-      sub_value      = ["project_path:${var.git_provider_org}/${var.git_repo}:*"]
+      aud_value      = "https://gitlab.com"
+      sub_values = flatten([
+        for repo in var.git_repos : "project_path:${var.git_provider_org}/${repo}:*"
+      ])
     }
 
     # Bitbucket uses OAuth 2.0, requires workspace ID
     "bitbucket-pipelines" = {
       oidc_url       = "api.bitbucket.org/2.0/workspaces/${local.cicd_provider_org}/pipelines-config/identity/oidc"
       oidc_supported = true
-      sub_value      = ["${var.git_provider_org}/${var.git_repo}:*"]
+      aud_value      = "sts.amazonaws.com"
+      sub_values     = flatten(var.git_repos)
     }
 
     # https://oidc.circleci.com/org/{org-id}/.well-known/openid-configuration
     "circleci" = {
       oidc_url       = "oidc.circleci.com/org/${local.cicd_provider_org}"
       oidc_supported = true
-      sub_value      = ["org/${var.git_provider_org}/project/${var.git_repo}/*"]
+      aud_value      = "sts.amazonaws.com"
+      sub_values = flatten([
+        for repo in var.git_repos : "org/${var.git_provider_org}/project/${repo}/*"
+      ])
     }
 
-    # https://app.vstoken.visualstudio.com/{tenantId}/.well-known/openid-configuration
+    # https://vstoken.dev.azure.com/{tenantId}/.well-known/openid-configuration
     "azure-devops" = {
-      oidc_url       = "app.vstoken.visualstudio.com/${local.cicd_provider_org}"
+      oidc_url       = "vstoken.dev.azure.com/${local.cicd_provider_org}"
       oidc_supported = true
-      sub_value      = ["sc://${var.git_provider_org}/${var.git_repo}/*"]
+      aud_value      = "api://AzureADTokenExchange"
+      sub_values = flatten([
+        for repo in var.git_repos : "sc://${var.git_provider_org}/${repo}/*"
+      ])
     }
 
     # Jenkins acts as OIDC client, not provider
     "jenkins" = {
       oidc_url       = "jenkins.io"
       oidc_supported = false
-      sub_value      = []
+      aud_value      = ""
+      sub_values     = []
     }
 
     # Travis CI doesn't have documented OIDC provider support
     "travis-ci" = {
       oidc_url       = "oidc.travis-ci.com"
       oidc_supported = false
-      sub_value      = []
+      aud_value      = ""
+      sub_values     = []
     }
 
-    # Buildkite has OIDC support, uses organization slug
+    # https://agent.buildkite.com/.well-known/openid-configuration
     "buildkite" = {
-      oidc_url       = "agent.buildkite.com/${local.cicd_provider_org}"
+      oidc_url       = "agent.buildkite.com"
       oidc_supported = true
-      sub_value      = ["organization:${var.git_provider_org}:pipeline:${var.git_repo}:*"]
+      aud_value      = "sts.amazonaws.com"
+      sub_values = flatten([
+        for repo in var.git_repos : "organization:${var.cicd_provider_org}:pipeline:${repo}:*"
+      ])
     }
 
     # AWS CodeBuild uses IAM/STS, not an OIDC provider
     "codebuild" = {
       oidc_url       = "codebuild.amazonaws.com"
       oidc_supported = false
-      sub_value      = []
+      aud_value      = ""
+      sub_values     = []
     }
 
     # https://app.harness.io/.well-known/openid-configuration
     "harness" = {
-      oidc_url       = "app.harness.io"
+      oidc_url       = "app.harness.io/ng/api/oidc/account/${local.cicd_provider_org}"
       oidc_supported = true
-      sub_value      = ["${var.git_provider_org}/${var.git_repo}:*"]
+      aud_value      = "sts.amazonaws.com"
+      sub_values = flatten([
+        for repo in var.git_repos : "account/${local.cicd_provider_org}:org/default:project/${repo}"
+      ])
     }
 
     # TeamCity integrates with external OIDC providers, not a provider itself
     "teamcity" = {
       oidc_url       = "teamcity.jetbrains.com"
       oidc_supported = false
-      sub_value      = []
+      aud_value      = ""
+      sub_values     = []
     }
 
     # Drone CI OIDC provider capabilities not documented
     "drone-ci" = {
       oidc_url       = "drone.io"
       oidc_supported = false
-      sub_value      = []
+      aud_value      = ""
+      sub_values     = []
+    }
+
+    # https://developer.hashicorp.com/terraform/cloud-docs/workspaces/dynamic-provider-credentials/aws-configuration
+    "terraform-cloud" = {
+      oidc_url       = "app.terraform.io"
+      oidc_supported = true
+      aud_value      = "aws.workload.identity"
+      sub_values = var.deployment_environment != "" ? flatten([
+        for repo in var.git_repos : "organization:${local.cicd_provider_org}:project:${repo}:workspace:${var.deployment_environment}:run_phase:*"
+        ]) : flatten([
+        for repo in var.git_repos : "organization:${local.cicd_provider_org}:project:${repo}:workspace:*:run_phase:*"
+      ])
+    }
+
+    # https://developer.hashicorp.com/terraform/enterprise/workspaces/dynamic-provider-credentials/aws-configuration
+    "terraform-enterprise" = {
+      oidc_url       = local.cicd_provider_org != "" ? local.cicd_provider_org : "terraform.example.com"
+      oidc_supported = true
+      aud_value      = "aws.workload.identity"
+      sub_values = var.deployment_environment != "" ? flatten([
+        for repo in var.git_repos : "organization:${local.cicd_provider_org}:project:${repo}:workspace:${var.deployment_environment}:run_phase:*"
+        ]) : flatten([
+        for repo in var.git_repos : "organization:${local.cicd_provider_org}:project:${repo}:workspace:*:run_phase:*"
+      ])
+    }
+
+    # https://docs.scalr.com/en/latest/workspaces.html#dynamic-provider-credentials
+    "scalr" = {
+      oidc_url       = local.cicd_provider_org != "" ? "${local.cicd_provider_org}.scalr.io" : "example.scalr.io"
+      oidc_supported = true
+      aud_value      = "aws.workload.identity"
+      sub_values = var.deployment_environment != "" ? flatten([
+        for repo in var.git_repos : "scalr:account:${local.cicd_provider_org}:environment:${var.deployment_environment}:workspace:${repo}:run_phase:*"
+        ]) : flatten([
+        for repo in var.git_repos : "scalr:account:${local.cicd_provider_org}:environment:*:workspace:${repo}:run_phase:*"
+      ])
+    }
+
+    # https://docs.spacelift.io/concepts/stack/dynamic-credentials/
+    "spacelift" = {
+      oidc_url       = local.cicd_provider_org != "" ? "${local.cicd_provider_org}.app.spacelift.io" : "example.app.spacelift.io"
+      oidc_supported = true
+      aud_value      = "spacelift"
+      sub_values = flatten([
+        for repo in var.git_repos : "space:${local.cicd_provider_org}:stack:${repo}:*"
+      ])
     }
   }
 
   # Use cicd_provider_org if provided, otherwise fall back to git_provider_org
   cicd_provider_org = var.cicd_provider_org != "" ? var.cicd_provider_org : var.git_provider_org
 
-  # Selected OIDC provider URL based on cicd_provider variable
-  selected_oidc_provider = local.cicd_providers_map[var.cicd_provider].oidc_url
-
-  # Check if the selected provider supports OIDC
-  provider_supports_oidc = local.cicd_providers_map[var.cicd_provider].oidc_supported
+  # Selected OIDC provider configuration based on cicd_provider variable
+  selected_oidc_provider = local.cicd_providers_map[var.cicd_provider]
 
   # Determine if we should create the OIDC provider
-  should_create_oidc = var.enabled && var.create_oidc_provider && !var.manage_oidc_provider && local.provider_supports_oidc
+  should_create_oidc = var.enabled && var.create_oidc_provider && !var.manage_oidc_provider && local.selected_oidc_provider.oidc_supported
 
   # Determine if we should manage (import) the OIDC provider
-  should_manage_oidc = var.enabled && var.manage_oidc_provider && local.provider_supports_oidc
+  should_manage_oidc = var.enabled && var.manage_oidc_provider && local.selected_oidc_provider.oidc_supported
 
   # OIDC provider ARN - managed, created, or provided
   oidc_provider_arn = var.enabled ? (

@@ -5,15 +5,15 @@
 data "tls_certificate" "oidc" {
   count = (local.should_create_oidc || local.should_manage_oidc) ? 1 : 0
 
-  url = "https://${local.selected_oidc_provider}"
+  url = "https://${local.selected_oidc_provider.oidc_url}"
 }
 
 # Create a new OIDC provider
 resource "aws_iam_openid_connect_provider" "cicd" {
   count = local.should_create_oidc ? 1 : 0
 
-  url             = "https://${local.selected_oidc_provider}"
-  client_id_list  = ["sts.amazonaws.com"]
+  url             = "https://${local.selected_oidc_provider.oidc_url}"
+  client_id_list  = [local.selected_oidc_provider.aud_value]
   thumbprint_list = data.tls_certificate.oidc[0].certificates[*].sha1_fingerprint
 
   tags = merge(
@@ -29,8 +29,8 @@ resource "aws_iam_openid_connect_provider" "cicd" {
 resource "aws_iam_openid_connect_provider" "managed" {
   count = local.should_manage_oidc ? 1 : 0
 
-  url             = "https://${local.selected_oidc_provider}"
-  client_id_list  = ["sts.amazonaws.com"]
+  url             = "https://${local.selected_oidc_provider.oidc_url}"
+  client_id_list  = [local.selected_oidc_provider.aud_value]
   thumbprint_list = data.tls_certificate.oidc[0].certificates[*].sha1_fingerprint
 
   tags = merge(
@@ -50,8 +50,9 @@ resource "aws_iam_openid_connect_provider" "managed" {
 # IAM Role for CI/CD
 # ----
 
-data "aws_iam_policy_document" "assume_role" {
-  count = var.enabled ? 1 : 0
+# OIDC-based assume role policy for providers that support OIDC
+data "aws_iam_policy_document" "assume_role_oidc" {
+  count = var.enabled && local.selected_oidc_provider.oidc_supported ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -65,18 +66,46 @@ data "aws_iam_policy_document" "assume_role" {
 
     condition {
       test     = "StringLike"
-      variable = "${local.selected_oidc_provider}:aud"
-      values   = ["sts.amazonaws.com"]
+      variable = "${local.selected_oidc_provider.oidc_url}:aud"
+      values   = [local.selected_oidc_provider.aud_value]
     }
+
+    condition {
+      test     = "StringLike"
+      variable = "${local.selected_oidc_provider.oidc_url}:sub"
+      values   = local.selected_oidc_provider.sub_values
+    }
+  }
+}
+
+# CodeBuild service assume role policy
+data "aws_iam_policy_document" "assume_role_codebuild" {
+  count = var.enabled && var.cicd_provider == "codebuild" ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["codebuild.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
   }
 }
 
 resource "aws_iam_role" "cicd" {
   count = var.enabled ? 1 : 0
 
-  name               = "${local.name_prefix}-cicd-role"
-  path               = "/"
-  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
+  name = "${local.name_prefix}-cicd-role"
+  path = "/"
+  assume_role_policy = local.selected_oidc_provider.oidc_supported ? (
+    data.aws_iam_policy_document.assume_role_oidc[0].json
+    ) : (
+    var.cicd_provider == "codebuild" ? (
+      data.aws_iam_policy_document.assume_role_codebuild[0].json
+    ) : var.assume_role_policy
+  )
 
   tags = merge(
     local.common_tags,
@@ -91,7 +120,7 @@ resource "aws_iam_role" "cicd" {
 # ----
 
 data "aws_iam_policy_document" "terraform_backend" {
-  count = var.enabled ? 1 : 0
+  count = var.enabled && var.s3_backend_config.enabled ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -101,7 +130,11 @@ data "aws_iam_policy_document" "terraform_backend" {
       "s3:GetBucketVersioning",
     ]
 
-    resources = ["arn:${local.partition}:s3:::*-terraform-state"]
+    resources = var.s3_backend_config.bucket_arn != "" ? [
+      var.s3_backend_config.bucket_arn
+      ] : [
+      "arn:${local.partition}:s3:::*-terraform-state"
+    ]
   }
 
   statement {
@@ -113,7 +146,11 @@ data "aws_iam_policy_document" "terraform_backend" {
       "s3:DeleteObject",
     ]
 
-    resources = ["arn:${local.partition}:s3:::*-terraform-state/*"]
+    resources = var.s3_backend_config.bucket_arn != "" ? [
+      "${var.s3_backend_config.bucket_arn}/*"
+      ] : [
+      "arn:${local.partition}:s3:::*-terraform-state/*"
+    ]
   }
 
   statement {
@@ -126,12 +163,16 @@ data "aws_iam_policy_document" "terraform_backend" {
       "dynamodb:DeleteItem",
     ]
 
-    resources = ["arn:${local.partition}:dynamodb:*:${local.account_id}:table/*-terraform-locks"]
+    resources = var.s3_backend_config.lock_table_arn != "" ? [
+      var.s3_backend_config.lock_table_arn
+      ] : [
+      "arn:${local.partition}:dynamodb:*:${local.account_id}:table/*-terraform-locks"
+    ]
   }
 }
 
 resource "aws_iam_role_policy" "terraform_backend" {
-  count = var.enabled ? 1 : 0
+  count = var.enabled && var.s3_backend_config.enabled ? 1 : 0
 
   name   = "terraform-backend-access"
   role   = aws_iam_role.cicd[0].id

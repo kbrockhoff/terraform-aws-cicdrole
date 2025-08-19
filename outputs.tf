@@ -19,5 +19,5 @@ output "oidc_provider_arn" {
 
 output "oidc_provider_url" {
   description = "URL of the OIDC provider"
-  value       = "https://${local.selected_oidc_provider}"
+  value       = "https://${local.selected_oidc_provider.oidc_url}"
 }
