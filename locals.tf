@@ -12,7 +12,7 @@ locals {
     ModuleEnvType = var.environment_type
   })
 
-  name_prefix = var.name_prefix
+  name_prefix = "${var.name_prefix}-${var.cicd_provider}"
 
   # CI/CD Provider configuration map
   cicd_providers_map = {
@@ -42,7 +42,7 @@ locals {
     "bitbucket-pipelines" = {
       oidc_url       = "api.bitbucket.org/2.0/workspaces/${local.cicd_provider_org}/pipelines-config/identity/oidc"
       oidc_supported = true
-      aud_value      = "sts.amazonaws.com"
+      aud_value      = "ari:cloud:bitbucket::workspace/${var.git_provider_org}"
       sub_values     = flatten(var.git_repos)
     }
 
@@ -185,14 +185,18 @@ locals {
   # Determine if we should manage (import) the OIDC provider
   should_manage_oidc = var.enabled && var.manage_oidc_provider && local.selected_oidc_provider.oidc_supported
 
-  # OIDC provider ARN - managed, created, or provided
+  # OIDC provider ARN - managed, created, or use data source
   oidc_provider_arn = var.enabled ? (
     local.should_manage_oidc ? (
       aws_iam_openid_connect_provider.managed[0].arn
       ) : (
       local.should_create_oidc ? (
         aws_iam_openid_connect_provider.cicd[0].arn
-      ) : var.oidc_provider_arn
+        ) : (
+        local.selected_oidc_provider.oidc_supported ? (
+          data.aws_iam_openid_connect_provider.existing[0].arn
+        ) : var.oidc_provider_arn
+      )
     )
   ) : ""
 

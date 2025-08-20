@@ -123,7 +123,7 @@ data "aws_iam_policy_document" "terraform_backend" {
   count = var.enabled && var.s3_backend_config.enabled ? 1 : 0
 
   statement {
-    sid    = "TerraformS3Backend-S3Bucket"
+    sid    = "TerraformS3BackendS3Bucket"
     effect = "Allow"
 
     actions = [
@@ -139,7 +139,7 @@ data "aws_iam_policy_document" "terraform_backend" {
   }
 
   statement {
-    sid    = "TerraformS3Backend-S3StateFiles"
+    sid    = "TerraformS3BackendS3StateFiles"
     effect = "Allow"
 
     actions = [
@@ -156,7 +156,7 @@ data "aws_iam_policy_document" "terraform_backend" {
   }
 
   statement {
-    sid    = "TerraformS3Backend-DynamoDBLockTable"
+    sid    = "TerraformS3BackendDynamoDBLockTable"
     effect = "Allow"
 
     actions = [
@@ -177,7 +177,7 @@ data "aws_iam_policy_document" "terraform_backend" {
 resource "aws_iam_role_policy" "terraform_backend" {
   count = var.enabled && var.s3_backend_config.enabled ? 1 : 0
 
-  name   = "terraform-backend-access"
+  name   = "${local.name_prefix}-tf-backend-access"
   role   = aws_iam_role.cicd[0].id
   policy = data.aws_iam_policy_document.terraform_backend[0].json
 }

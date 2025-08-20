@@ -1,5 +1,8 @@
-name_prefix            = "tfc"
-terraform_organization = "my-tfc-org"
-git_provider_org       = "my-github-org"
-git_repos              = ["infrastructure", "applications"]
+name_prefix            = "tfc-example"
+terraform_organization = "example-org"
+git_provider_org       = "example-org"
+git_repos = [
+  "aws-account-factory",
+  "aws-networking",
+]
 deployment_environment = "production"

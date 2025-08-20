@@ -1,1 +1,1 @@
-name_prefix = "codebuild"
+name_prefix = "codebuild-example"

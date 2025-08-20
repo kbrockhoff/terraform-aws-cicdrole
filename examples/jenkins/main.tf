@@ -13,7 +13,10 @@ data "aws_iam_policy_document" "jenkins_saml_assume_role" {
       identifiers = [var.saml_provider_arn]
     }
 
-    actions = ["sts:AssumeRoleWithSAML"]
+    actions = [
+      "sts:AssumeRoleWithSAML",
+      "sts:TagSession",
+    ]
 
     condition {
       test     = "StringEquals"
