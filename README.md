@@ -1,102 +1,117 @@
 # AWS Role for CI/CD Pipeline Terraform Module
 
-Terraform module which an IAM Role on AWS which trusts CI/CD system OIDC provider.
+Provisions an IAM Role on AWS for use by CI/CD pipelines. Supports many commonly-used CI/CD platforms 
+out-of-the-box as well as custom configurations. Optionally, adds policy to support use of the 
+Terraform S3 backend for state management.
+
+All Brockhoff AWS Terraform modules define a bootstrap submodule which creates a policy with all 
+permissions needed for terraform apply and destroy to work. This module is intended to be used to 
+create a role which is then passed into one or more of these bootstrap submodules.
 
 ## Features
 
-- Provisions role which trusts CI/CD system OIDC provider
-- Provisions policy which enables role to use Terraform S3 backend
+- Provisions IAM Role which securely integrates with widely-used CI/CD platforms
+- Provisions IAM OIDC provider for the CI/CD plaform being used if not already provisioned
+- Provisions policy which enables role to use Terraform S3 backend for those CI/CD pipelines which use it
 
 ## Usage
 
-### Basic Example
-
+### GitHub Actions with Existing OIDC Provider
 ```hcl
-module "example" {
+module "github_actions_role" {
   source = "kbrockhoff/cicdrole/aws"
-
-  # ... other required arguments ...
-}
-```
-
-### Complete Example
-
-```hcl
-module "example" {
-  source = "kbrockhoff/cicdrole/aws"
-
-  # ... all available arguments ...
-}
-```
-
-## Environment Type Configuration
-
-The `environment_type` variable provides a standardized way to configure resource defaults based on environment 
-characteristics. This follows cloud well-architected framework recommendations for different deployment stages. 
-Resiliency settings comply with the recovery point objective (RPO) and recovery time objective (RTO) values in
-the table below. Cost optimization settings focus on shutting down resources during off-hours.
-
-### Available Environment Types
-
-| Type | Use Case | Configuration Focus | RPO | RTO |
-|------|----------|---------------------|-----|-----|
-| `None` | Custom configuration | No defaults applied, use individual config values | N/A | N/A |
-| `Ephemeral` | Temporary environments | Cost-optimized, minimal durability requirements | N/A | 48h |
-| `Development` | Developer workspaces | Balanced cost and functionality for active development | 24h | 48h |
-| `Testing` | Automated testing | Consistent, repeatable configurations | 24h | 48h |
-| `UAT` | User acceptance testing | Production-like settings with some cost optimization | 12h | 24h |
-| `Production` | Live systems | High availability, durability, and performance | 1h  | 4h  |
-| `MissionCritical` | Critical production | Maximum reliability, redundancy, and monitoring | 5m  | 1h  |
-
-### Usage Examples
-
-#### Development Environment
-```hcl
-module "dev_resources" {
-  source = "path/to/terraform-module"
   
-  name_prefix      = "dev-usw2"
-  environment_type = "Development"
+  name_prefix            = "prod-usw2"
+  cicd_provider          = "github-actions"
+  git_provider_org       = "my-organization"
+  git_repos              = ["my-repo", "another-repo"]
+  deployment_environment = "production"
+  create_oidc_provider   = false  # Use existing provider
   
-  tags = {
-    Environment = "development"
-    Team        = "platform"
+  s3_backend_config = {
+    enabled        = true
+    bucket_arn     = "arn:aws:s3:::my-terraform-state"
+    lock_table_arn = "arn:aws:dynamodb:us-east-1:123456789012:table/my-terraform-locks"
   }
-}
-```
-
-#### Production Environment
-```hcl
-module "prod_resources" {
-  source = "path/to/terraform-module"
-  
-  name_prefix      = "prod-usw2"
-  environment_type = "Production"
   
   tags = {
     Environment = "production"
     Team        = "platform"
-    Backup      = "required"
   }
 }
 ```
 
-#### Custom Configuration (None)
+### Jenkins with SAML Authentication
 ```hcl
-module "custom_resources" {
-  source = "path/to/terraform-module"
+# Custom assume role policy for Jenkins using SAML authentication
+data "aws_iam_policy_document" "jenkins_saml_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = ["arn:aws:iam::123456789012:saml-provider/JenkinsSAML"]
+    }
+
+    actions = [
+      "sts:AssumeRoleWithSAML",
+      "sts:TagSession",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "SAML:aud"
+      values   = ["https://signin.aws.amazon.com/saml"]
+    }
+  }
+}
+
+module "jenkins_role" {
+  source = "kbrockhoff/cicdrole/aws"
   
-  name_prefix      = "custom-usw2"
-  environment_type = "None"
+  name_prefix        = "dev-usw2"
+  cicd_provider      = "jenkins"
+  git_provider_org   = "my-organization"
+  assume_role_policy = data.aws_iam_policy_document.jenkins_saml_assume_role.json
   
-  # Specify all individual configuration values
-  # when environment_type is "None"
+  s3_backend_config = {
+    enabled        = true
+    bucket_arn     = ""        # Uses wildcard patterns
+    lock_table_arn = ""        # Uses wildcard patterns
+  }
+  
+  tags = {
+    Environment = "development"
+    Team        = "devops"
+  }
 }
 ```
-## Network Tags Configuration
 
-Resources deployed to subnets use lookup by `NetworkTags` values to determine which subnets to deploy to. 
-This eliminates the need to manage different subnet IDs variable values for each environment.
+### Terraform Cloud with Environment-Specific Access
+```hcl
+module "terraform_cloud_role" {
+  source = "kbrockhoff/cicdrole/aws"
+  
+  name_prefix            = "tfc-prod"
+  cicd_provider          = "terraform-cloud"
+  cicd_provider_org      = "my-tfc-organization"
+  git_provider_org       = "my-git-organization"
+  git_repos              = ["aws-infrastructure", "networking"]
+  deployment_environment = "production"
+  
+  # Terraform Cloud manages its own backend, so disable S3 backend permissions
+  s3_backend_config = {
+    enabled        = false
+    bucket_arn     = ""
+    lock_table_arn = ""
+  }
+  
+  tags = {
+    Environment = "production"
+    ManagedBy   = "terraform-cloud"
+  }
+}
+```
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

@@ -93,7 +93,7 @@ variable "oidc_provider_arn" {
 }
 
 variable "cicd_provider_org" {
-  description = "Organization ID for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace). If blank, uses git_provider_org"
+  description = "Organization ID or hostname for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace, TFE/Scalr hostname). If blank, uses git_provider_org."
   type        = string
   default     = ""
 }
