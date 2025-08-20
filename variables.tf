@@ -24,12 +24,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "data_tags" {
-  description = "Additional tags to apply specifically to data storage resources (e.g., S3, RDS, EBS) beyond the common tags."
-  type        = map(string)
-  default     = {}
-}
-
 variable "environment_type" {
   description = "Environment type for resource configuration defaults. Select 'None' to use individual config values."
   type        = string
@@ -40,17 +34,6 @@ variable "environment_type" {
       "None", "Ephemeral", "Development", "Testing", "UAT", "Production", "MissionCritical"
     ], var.environment_type)
     error_message = "Environment type must be one of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical."
-  }
-}
-
-variable "networktags_name" {
-  description = "Name of the network tags key used for subnet classification"
-  type        = string
-  default     = "NetworkTags"
-
-  validation {
-    condition     = var.networktags_name != null && var.networktags_name != ""
-    error_message = "Network tags name cannot be null or blank."
   }
 }
 

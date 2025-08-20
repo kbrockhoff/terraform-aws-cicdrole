@@ -16,6 +16,5 @@ module "main" {
     lock_table_arn = ""
   }
   tags             = var.tags
-  data_tags        = var.data_tags
   environment_type = var.environment_type
 }

@@ -24,12 +24,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "data_tags" {
-  description = "Tags/labels to apply to all resources with data-at-rest"
-  type        = map(string)
-  default     = {}
-}
-
 variable "environment_type" {
   description = "Environment type for resource configuration defaults. Select 'None' to use individual config values."
   type        = string

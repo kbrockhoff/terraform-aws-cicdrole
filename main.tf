@@ -87,7 +87,7 @@ data "aws_iam_policy_document" "assume_role_codebuild" {
 
     principals {
       type        = "Service"
-      identifiers = ["codebuild.amazonaws.com"]
+      identifiers = ["codebuild.${local.dns_suffix}"]
     }
 
     actions = ["sts:AssumeRole"]
@@ -97,7 +97,7 @@ data "aws_iam_policy_document" "assume_role_codebuild" {
 resource "aws_iam_role" "cicd" {
   count = var.enabled ? 1 : 0
 
-  name = "${local.name_prefix}-cicd-role"
+  name = "${local.name_prefix}-cicd-deployer"
   path = "/"
   assume_role_policy = local.selected_oidc_provider.oidc_supported ? (
     data.aws_iam_policy_document.assume_role_oidc[0].json
@@ -123,6 +123,7 @@ data "aws_iam_policy_document" "terraform_backend" {
   count = var.enabled && var.s3_backend_config.enabled ? 1 : 0
 
   statement {
+    sid    = "TerraformS3Backend-S3Bucket"
     effect = "Allow"
 
     actions = [
@@ -138,6 +139,7 @@ data "aws_iam_policy_document" "terraform_backend" {
   }
 
   statement {
+    sid    = "TerraformS3Backend-S3StateFiles"
     effect = "Allow"
 
     actions = [
@@ -154,6 +156,7 @@ data "aws_iam_policy_document" "terraform_backend" {
   }
 
   statement {
+    sid    = "TerraformS3Backend-DynamoDBLockTable"
     effect = "Allow"
 
     actions = [
