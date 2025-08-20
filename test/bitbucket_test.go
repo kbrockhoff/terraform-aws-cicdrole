@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTerraformCompleteExample(t *testing.T) {
+func TestTerraformBitbucketExample(t *testing.T) {
 	t.Parallel()
-	expectedName := generateTestNamePrefix("comp")
+	expectedName := generateTestNamePrefix("bb")
 
 	terraformOptions := &terraform.Options{
 		// The path to where our Terraform code is located
-		TerraformDir: "../examples/complete",
+		TerraformDir: "../examples/bitbucket",
 
 		// Variables to pass to our Terraform code using -var options
 		Vars: map[string]interface{}{
@@ -35,26 +35,23 @@ func TestTerraformCompleteExample(t *testing.T) {
 	// Verify the plan completed without errors and shows expected resource creation
 	assert.NotEmpty(t, planOutput)
 	
-	// Verify core KMS resources are planned for creation
-	assert.Contains(t, planOutput, "module.main.aws_kms_key.main[0]")
-	assert.Contains(t, planOutput, "module.main.aws_kms_alias.main[0]")
+	// Verify core IAM and OIDC resources are planned for creation
+	assert.Contains(t, planOutput, "module.main.aws_iam_role.cicd[0]")
+	assert.Contains(t, planOutput, "module.main.aws_iam_openid_connect_provider.cicd[0]")
 	assert.Contains(t, planOutput, "will be created")
 	
-	// Verify SNS topic IS created when alarms_config.enabled=true (set in complete example)
-	assert.Contains(t, planOutput, "module.main.aws_sns_topic.alarms[0]")
-	
-	// Verify expected resource count (3 resources: KMS key + alias + SNS topic)
+	// Verify expected resource count (3 resources: IAM role + IAM policy + OIDC provider)
 	assert.Contains(t, planOutput, "3 to add, 0 to change, 0 to destroy")
 
 }
 
 func TestEnabledFalse(t *testing.T) {
 	t.Parallel()
-	expectedName := generateTestNamePrefix("comp")
+	expectedName := generateTestNamePrefix("bb")
 
 	terraformOptions := &terraform.Options{
 		// The path to where our Terraform code is located
-		TerraformDir: "../examples/complete",
+		TerraformDir: "../examples/bitbucket",
 
 		// Variables to pass to our Terraform code using -var options
 		Vars: map[string]interface{}{

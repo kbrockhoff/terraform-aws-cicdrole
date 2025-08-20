@@ -1,4 +1,4 @@
-module github.com/kbrockhoff/terraform-cloud-replaceme
+module github.com/kbrockhoff/terraform-aws-cicdrole
 
 go 1.24.5
 

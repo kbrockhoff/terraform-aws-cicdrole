@@ -37,38 +37,6 @@ variable "environment_type" {
   }
 }
 
-# ----
-# CI/CD Provider Configuration
-# ----
-
-variable "cicd_provider" {
-  description = "CI/CD platform provider for OIDC trust relationship"
-  type        = string
-  default     = "github-actions"
-
-  validation {
-    condition = contains([
-      "github-actions",
-      "gitlab-ci",
-      "bitbucket-pipelines",
-      "circleci",
-      "azure-devops",
-      "jenkins",
-      "travis-ci",
-      "buildkite",
-      "codebuild",
-      "harness",
-      "teamcity",
-      "drone-ci",
-      "terraform-cloud",
-      "terraform-enterprise",
-      "scalr",
-      "spacelift"
-    ], var.cicd_provider)
-    error_message = "CI/CD provider must be one of: github-actions, gitlab-ci, bitbucket-pipelines, circleci, azure-devops, jenkins, travis-ci, buildkite, codebuild, harness, teamcity, drone-ci, terraform-cloud, terraform-enterprise, scalr, spacelift."
-  }
-}
-
 variable "create_oidc_provider" {
   description = "Whether to create the OIDC provider resource. If false, oidc_provider_arn must be provided"
   type        = bool
@@ -93,7 +61,7 @@ variable "oidc_provider_arn" {
 }
 
 variable "cicd_provider_org" {
-  description = "Organization ID or hostname for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace, TFE/Scalr hostname). If blank, uses git_provider_org."
+  description = "Organization ID for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace). If blank, uses git_provider_org"
   type        = string
   default     = ""
 }
@@ -111,12 +79,6 @@ variable "git_repos" {
 
 variable "deployment_environment" {
   description = "Deployment environment name for OIDC trust policy (e.g., 'production', 'staging', 'development'). Used in sub claim conditions for providers that support environment-based claims"
-  type        = string
-  default     = ""
-}
-
-variable "assume_role_policy" {
-  description = "Custom assume role policy JSON. Used for providers that don't support OIDC and aren't AWS CodeBuild. If empty, module will generate appropriate policy"
   type        = string
   default     = ""
 }

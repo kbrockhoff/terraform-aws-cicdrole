@@ -9,13 +9,13 @@ import (
 
 const RandomIDLength = 10
 
-func TestTerraformDefaultsExample(t *testing.T) {
+func TestTerraformGitHubActionsExample(t *testing.T) {
 	t.Parallel()
-	expectedName := generateTestNamePrefix("def")
+	expectedName := generateTestNamePrefix("gha")
 
 	terraformOptions := &terraform.Options{
 		// The path to where our Terraform code is located
-		TerraformDir: "../examples/defaults",
+		TerraformDir: "../examples/github-actions",
 
 		// Variables to pass to our Terraform code using -var options
 		Vars: map[string]interface{}{
@@ -36,15 +36,16 @@ func TestTerraformDefaultsExample(t *testing.T) {
 	// Verify the plan completed without errors and shows expected resource creation
 	assert.NotEmpty(t, planOutput)
 	
-	// Verify core KMS resources are planned for creation
-	assert.Contains(t, planOutput, "module.main.aws_kms_key.main[0]")
-	assert.Contains(t, planOutput, "module.main.aws_kms_alias.main[0]")
+	// Verify core IAM resources are planned for creation
+	assert.Contains(t, planOutput, "module.main.aws_iam_role.cicd[0]")
+	assert.Contains(t, planOutput, "module.main.aws_iam_role_policy.terraform_backend[0]")
 	assert.Contains(t, planOutput, "will be created")
 	
-	// Verify SNS topic is NOT created by default (alarms_enabled=false)
-	assert.NotContains(t, planOutput, "module.main.aws_sns_topic.alarms")
+	// Since create_oidc_provider = false in the example, it uses data source instead
+	assert.Contains(t, planOutput, "module.main.data.aws_iam_openid_connect_provider.existing[0]")
 	
-	// Verify expected resource count (2 resources: KMS key + alias)
+	// Verify expected resource count (2 resources: IAM role + IAM policy)
+	// OIDC provider is not created because create_oidc_provider = false
 	assert.Contains(t, planOutput, "2 to add, 0 to change, 0 to destroy")
 
 }
