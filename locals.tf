@@ -14,6 +14,25 @@ locals {
 
   name_prefix = "${var.name_prefix}-${var.cicd_provider}"
 
+  # GitHub Actions subject claims
+  # Legacy:    repo:<org>/<repo>:<context>
+  # Immutable: repo:<org>@<org_id>/<repo>@<repo_id>:<context>
+  # Immutable IDs prevent a recycled org/repo name from matching this trust policy.
+  # git_repos entries may carry an "@<repo_id>" suffix; legacy patterns strip it,
+  # immutable patterns without one match any repo ID under the pinned org ID.
+  github_sub_context = var.deployment_environment != "" ? "environment:${var.deployment_environment}" : "*"
+  github_legacy_subs = [
+    for repo in var.git_repos : "repo:${var.git_provider_org}/${split("@", repo)[0]}:${local.github_sub_context}"
+  ]
+  github_immutable_subs = [
+    for repo in var.git_repos :
+    "repo:${var.git_provider_org}@${var.git_provider_org_id}/${strcontains(repo, "@") ? repo : "${repo}@*"}:${local.github_sub_context}"
+  ]
+  github_sub_values = concat(
+    var.github_subject_format != "immutable" ? local.github_legacy_subs : [],
+    var.github_subject_format != "legacy" ? local.github_immutable_subs : [],
+  )
+
   # CI/CD Provider configuration map
   cicd_providers_map = {
     # https://token.actions.githubusercontent.com/.well-known/openid-configuration
@@ -21,11 +40,7 @@ locals {
       oidc_url       = "token.actions.githubusercontent.com"
       oidc_supported = true
       aud_value      = "sts.amazonaws.com"
-      sub_values = var.deployment_environment != "" ? flatten([
-        for repo in var.git_repos : "repo:${var.git_provider_org}/${repo}:environment:${var.deployment_environment}"
-        ]) : flatten([
-        for repo in var.git_repos : "repo:${var.git_provider_org}/${repo}:*"
-      ])
+      sub_values     = local.github_sub_values
     }
 
     # https://gitlab.com/.well-known/openid-configuration
@@ -172,6 +187,10 @@ locals {
       ])
     }
   }
+
+  # DynamoDB locking is needed unless S3 native locking is used; an explicit
+  # lock table is still granted alongside use_lockfile to support migration
+  grant_dynamodb_lock_table = !var.s3_backend_config.use_lockfile || var.s3_backend_config.lock_table_arn != ""
 
   # Use cicd_provider_org if provided, otherwise fall back to git_provider_org
   cicd_provider_org = var.cicd_provider_org != "" ? var.cicd_provider_org : var.git_provider_org

@@ -103,10 +103,37 @@ variable "git_provider_org" {
   type        = string
 }
 
+variable "git_provider_org_id" {
+  description = "Immutable numeric ID of the git provider organization/user (e.g., GitHub owner ID from 'gh api users/<org> --jq .id'). Required when github_subject_format is 'immutable' or 'both'"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = can(regex("^[0-9]*$", var.git_provider_org_id))
+    error_message = "The git_provider_org_id must be a numeric ID or empty string."
+  }
+}
+
 variable "git_repos" {
-  description = "List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization"
+  description = "List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization. For GitHub immutable subject claims, entries may be 'name@id' to pin the immutable repository ID; otherwise any repository ID is matched"
   type        = list(string)
   default     = ["*"]
+}
+
+variable "github_subject_format" {
+  description = "GitHub Actions OIDC subject claim format to trust. 'legacy' matches 'repo:org/repo:...', 'immutable' matches 'repo:org@orgid/repo@repoid:...', 'both' matches either (use while migrating). Only used when cicd_provider is 'github-actions'"
+  type        = string
+  default     = "legacy"
+
+  validation {
+    condition     = contains(["legacy", "immutable", "both"], var.github_subject_format)
+    error_message = "The github_subject_format must be one of: legacy, immutable, both."
+  }
+
+  validation {
+    condition     = var.cicd_provider != "github-actions" || var.github_subject_format == "legacy" || var.git_provider_org_id != ""
+    error_message = "The git_provider_org_id must be set when github_subject_format is 'immutable' or 'both'."
+  }
 }
 
 variable "deployment_environment" {
@@ -126,15 +153,17 @@ variable "assume_role_policy" {
 # ----
 
 variable "s3_backend_config" {
-  description = "Configuration for Terraform S3 backend access permissions"
+  description = "Configuration for Terraform S3 backend access permissions. Set use_lockfile = true when the backend uses S3 native state locking (use_lockfile); DynamoDB permissions are then only granted if lock_table_arn is also set (e.g., while migrating)"
   type = object({
     enabled        = bool
     bucket_arn     = string
-    lock_table_arn = string
+    lock_table_arn = optional(string, "")
+    use_lockfile   = optional(bool, false)
   })
   default = {
     enabled        = true
     bucket_arn     = ""
     lock_table_arn = ""
+    use_lockfile   = false
   }
 }

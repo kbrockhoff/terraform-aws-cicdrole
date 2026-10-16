@@ -10,7 +10,9 @@ module "main" {
   cicd_provider          = "github-actions"
   cicd_provider_org      = "kbrockhoff"
   git_provider_org       = "kbrockhoff"
+  git_provider_org_id    = var.git_provider_org_id
   git_repos              = var.git_repos
+  github_subject_format  = var.github_subject_format
   deployment_environment = var.deployment_environment
   create_oidc_provider   = false
   s3_backend_config = {

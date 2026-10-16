@@ -14,7 +14,7 @@ func TestCodeBuildProvider(t *testing.T) {
 	testName := generateTestNamePrefix("cbld")
 
 	// Use the codebuild example directly
-	terraformOptions := getBaseTerraformOptions("../examples/codebuild")
+	terraformOptions := getBaseTerraformOptions(isolatedExampleDir(t, "codebuild"))
 	terraformOptions.Vars = map[string]interface{}{
 		"name_prefix": testName,
 	}

@@ -1,11 +1,15 @@
 package test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/files"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 // TestMain sets up and tears down any shared test resources
@@ -96,4 +100,15 @@ func generateTestNamePrefix(prefix string) string {
 		randomId = randomId + strings.Repeat("0", RandomIDLength-len(randomId))
 	}
 	return prefix + "-" + randomId
+}
+
+// isolatedExampleDir copies the repository to a unique temp folder and returns the path to the
+// named example within it, so parallel tests never share a .terraform directory, state or lock.
+// The whole repository is copied so the examples' "../../" module source still resolves.
+func isolatedExampleDir(t *testing.T, example string) string {
+	tmpRoot, err := files.CopyTerraformFolderToTemp("..", strings.ReplaceAll(t.Name(), "/", "-"))
+	require.NoError(t, err)
+	// Runs after the test's deferred terraform.Destroy; tmpRoot is <unique temp dir>/<repo dir name>
+	t.Cleanup(func() { os.RemoveAll(filepath.Dir(tmpRoot)) })
+	return filepath.Join(tmpRoot, "examples", example)
 }
