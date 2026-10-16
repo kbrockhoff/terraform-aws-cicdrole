@@ -76,13 +76,6 @@ data "aws_iam_policy_document" "assume_role_oidc" {
       values   = local.selected_oidc_provider.sub_values
     }
   }
-
-  lifecycle {
-    precondition {
-      condition     = var.cicd_provider != "github-actions" || var.github_subject_format == "legacy" || var.git_provider_org_id != ""
-      error_message = "The git_provider_org_id must be set when github_subject_format is 'immutable' or 'both'."
-    }
-  }
 }
 
 # CodeBuild service assume role policy

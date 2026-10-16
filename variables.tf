@@ -129,6 +129,11 @@ variable "github_subject_format" {
     condition     = contains(["legacy", "immutable", "both"], var.github_subject_format)
     error_message = "The github_subject_format must be one of: legacy, immutable, both."
   }
+
+  validation {
+    condition     = var.cicd_provider != "github-actions" || var.github_subject_format == "legacy" || var.git_provider_org_id != ""
+    error_message = "The git_provider_org_id must be set when github_subject_format is 'immutable' or 'both'."
+  }
 }
 
 variable "deployment_environment" {
