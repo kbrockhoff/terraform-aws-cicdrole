@@ -19,3 +19,15 @@ variable "deployment_environment" {
   type        = string
   default     = ""
 }
+
+variable "git_provider_org_id" {
+  description = "Immutable numeric ID of the GitHub owner. Required when github_subject_format is 'immutable' or 'both'"
+  type        = string
+  default     = ""
+}
+
+variable "github_subject_format" {
+  description = "GitHub Actions OIDC subject claim format to trust: legacy, immutable, or both"
+  type        = string
+  default     = "legacy"
+}

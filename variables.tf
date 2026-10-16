@@ -103,10 +103,32 @@ variable "git_provider_org" {
   type        = string
 }
 
+variable "git_provider_org_id" {
+  description = "Immutable numeric ID of the git provider organization/user (e.g., GitHub owner ID from 'gh api users/<org> --jq .id'). Required when github_subject_format is 'immutable' or 'both'"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = can(regex("^[0-9]*$", var.git_provider_org_id))
+    error_message = "The git_provider_org_id must be a numeric ID or empty string."
+  }
+}
+
 variable "git_repos" {
-  description = "List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization"
+  description = "List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization. For GitHub immutable subject claims, entries may be 'name@id' to pin the immutable repository ID; otherwise any repository ID is matched"
   type        = list(string)
   default     = ["*"]
+}
+
+variable "github_subject_format" {
+  description = "GitHub Actions OIDC subject claim format to trust. 'legacy' matches 'repo:org/repo:...', 'immutable' matches 'repo:org@orgid/repo@repoid:...', 'both' matches either (use while migrating). Only used when cicd_provider is 'github-actions'"
+  type        = string
+  default     = "legacy"
+
+  validation {
+    condition     = contains(["legacy", "immutable", "both"], var.github_subject_format)
+    error_message = "The github_subject_format must be one of: legacy, immutable, both."
+  }
 }
 
 variable "deployment_environment" {

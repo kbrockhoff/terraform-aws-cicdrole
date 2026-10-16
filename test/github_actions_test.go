@@ -48,4 +48,48 @@ func TestTerraformGitHubActionsExample(t *testing.T) {
 	// OIDC provider is not created because create_oidc_provider = false
 	assert.Contains(t, planOutput, "2 to add, 0 to change, 0 to destroy")
 
+	// Example uses github_subject_format = "both" so legacy and immutable subject claims are trusted
+	assert.Contains(t, planOutput, "repo:kbrockhoff/terraform-aws-cicdrole:environment:development")
+	assert.Contains(t, planOutput, "repo:kbrockhoff@1822996/terraform-aws-cicdrole@*:environment:development")
+}
+
+func TestTerraformGitHubActionsImmutableSubjectOnly(t *testing.T) {
+	t.Parallel()
+	expectedName := generateTestNamePrefix("ghi")
+
+	terraformOptions := &terraform.Options{
+		TerraformDir: "../examples/github-actions",
+		Vars: map[string]interface{}{
+			"name_prefix":           expectedName,
+			"github_subject_format": "immutable",
+			"git_repos":             []string{"terraform-aws-cicdrole@1039095647"},
+		},
+	}
+
+	terraform.Init(t, terraformOptions)
+	planOutput := terraform.Plan(t, terraformOptions)
+
+	// Pinned repo ID is used verbatim and legacy (mutable name only) claims are not trusted
+	assert.Contains(t, planOutput, "repo:kbrockhoff@1822996/terraform-aws-cicdrole@1039095647:environment:development")
+	assert.NotContains(t, planOutput, "repo:kbrockhoff/terraform-aws-cicdrole:")
+}
+
+func TestTerraformGitHubActionsImmutableSubjectRequiresOrgID(t *testing.T) {
+	t.Parallel()
+	expectedName := generateTestNamePrefix("ghx")
+
+	terraformOptions := &terraform.Options{
+		TerraformDir: "../examples/github-actions",
+		Vars: map[string]interface{}{
+			"name_prefix":           expectedName,
+			"github_subject_format": "immutable",
+			"git_provider_org_id":   "",
+		},
+	}
+
+	terraform.Init(t, terraformOptions)
+	_, err := terraform.PlanE(t, terraformOptions)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "git_provider_org_id must be set")
 }

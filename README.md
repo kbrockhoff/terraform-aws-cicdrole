@@ -41,6 +41,30 @@ module "github_actions_role" {
 }
 ```
 
+### GitHub Actions Immutable Subject Claims
+
+GitHub OIDC tokens can include immutable owner and repository IDs in the `sub` claim
+(`repo:my-organization@123456/my-repo@456789:...`). It is the default for repositories created,
+renamed or transferred after July 15, 2026, and existing repositories can opt in. Because the IDs
+are immutable, a recycled organization or repository name cannot match the trust policy.
+
+```hcl
+module "github_actions_role" {
+  source = "kbrockhoff/cicdrole/aws"
+
+  name_prefix           = "prod-usw2"
+  cicd_provider         = "github-actions"
+  git_provider_org      = "my-organization"
+  git_provider_org_id   = "123456"                       # gh api users/my-organization --jq .id
+  git_repos             = ["my-repo@456789", "another-repo"] # optional @<repo_id> pins the repository
+  github_subject_format = "both"                         # "immutable" once all repos have migrated
+}
+```
+
+- `legacy` (default): trusts only `repo:<org>/<repo>:...`
+- `both`: trusts legacy and immutable claims; use while repositories migrate
+- `immutable`: trusts only `repo:<org>@<org_id>/<repo>@<repo_id>:...`; a repo without `@<repo_id>` matches any repository ID under the pinned owner ID
+
 ### Jenkins with SAML Authentication
 ```hcl
 # Custom assume role policy for Jenkins using SAML authentication
@@ -117,7 +141,7 @@ module "terraform_cloud_role" {
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | >= 4.0 |
@@ -125,9 +149,9 @@ module "terraform_cloud_role" {
 ## Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.9.0 |
-| <a name="provider_tls"></a> [tls](#provider\_tls) | 4.1.0 |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
+| <a name="provider_tls"></a> [tls](#provider\_tls) | >= 4.0 |
 
 ## Modules
 
@@ -136,7 +160,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [aws_iam_openid_connect_provider.cicd](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
 | [aws_iam_openid_connect_provider.managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
 | [aws_iam_role.cicd](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
@@ -145,17 +169,19 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_git_provider_org"></a> [git\_provider\_org](#input\_git\_provider\_org) | Git provider organization/username (e.g., GitHub org, GitLab group). Required for most OIDC trust policies | `string` | n/a | yes |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Organization unique prefix to use for resource names. Recommend including environment and region. e.g. 'prod-usw2' | `string` | n/a | yes |
 | <a name="input_assume_role_policy"></a> [assume\_role\_policy](#input\_assume\_role\_policy) | Custom assume role policy JSON. Used for providers that don't support OIDC and aren't AWS CodeBuild. If empty, module will generate appropriate policy | `string` | `""` | no |
 | <a name="input_cicd_provider"></a> [cicd\_provider](#input\_cicd\_provider) | CI/CD platform provider for OIDC trust relationship | `string` | `"github-actions"` | no |
-| <a name="input_cicd_provider_org"></a> [cicd\_provider\_org](#input\_cicd\_provider\_org) | Organization ID for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace). If blank, uses git\_provider\_org | `string` | `""` | no |
+| <a name="input_cicd_provider_org"></a> [cicd\_provider\_org](#input\_cicd\_provider\_org) | Organization ID or hostname for CI/CD providers that require it (e.g., CircleCI org ID, Azure DevOps tenant ID, Bitbucket workspace, TFE/Scalr hostname). If blank, uses git\_provider\_org. | `string` | `""` | no |
 | <a name="input_create_oidc_provider"></a> [create\_oidc\_provider](#input\_create\_oidc\_provider) | Whether to create the OIDC provider resource. If false, oidc\_provider\_arn must be provided | `bool` | `true` | no |
 | <a name="input_deployment_environment"></a> [deployment\_environment](#input\_deployment\_environment) | Deployment environment name for OIDC trust policy (e.g., 'production', 'staging', 'development'). Used in sub claim conditions for providers that support environment-based claims | `string` | `""` | no |
 | <a name="input_enabled"></a> [enabled](#input\_enabled) | Set to false to prevent the module from creating any resources | `bool` | `true` | no |
 | <a name="input_environment_type"></a> [environment\_type](#input\_environment\_type) | Environment type for resource configuration defaults. Select 'None' to use individual config values. | `string` | `"Development"` | no |
-| <a name="input_git_repos"></a> [git\_repos](#input\_git\_repos) | List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization | `list(string)` | <pre>[<br/>  "*"<br/>]</pre> | no |
+| <a name="input_git_provider_org_id"></a> [git\_provider\_org\_id](#input\_git\_provider\_org\_id) | Immutable numeric ID of the git provider organization/user (e.g., GitHub owner ID from 'gh api users/<org> --jq .id'). Required when github\_subject\_format is 'immutable' or 'both' | `string` | `""` | no |
+| <a name="input_git_repos"></a> [git\_repos](#input\_git\_repos) | List of git repository names or patterns for OIDC trust policy. Use ['*'] to allow all repositories in the organization. For GitHub immutable subject claims, entries may be 'name@id' to pin the immutable repository ID; otherwise any repository ID is matched | `list(string)` | <pre>[<br/>  "*"<br/>]</pre> | no |
+| <a name="input_github_subject_format"></a> [github\_subject\_format](#input\_github\_subject\_format) | GitHub Actions OIDC subject claim format to trust. 'legacy' matches 'repo:org/repo:...', 'immutable' matches 'repo:org@orgid/repo@repoid:...', 'both' matches either (use while migrating). Only used when cicd\_provider is 'github-actions' | `string` | `"legacy"` | no |
 | <a name="input_manage_oidc_provider"></a> [manage\_oidc\_provider](#input\_manage\_oidc\_provider) | Whether to manage (import) an existing OIDC provider. Takes precedence over create\_oidc\_provider | `bool` | `false` | no |
 | <a name="input_oidc_provider_arn"></a> [oidc\_provider\_arn](#input\_oidc\_provider\_arn) | ARN of an existing OIDC provider. Required if create\_oidc\_provider is false | `string` | `""` | no |
 | <a name="input_s3_backend_config"></a> [s3\_backend\_config](#input\_s3\_backend\_config) | Configuration for Terraform S3 backend access permissions | <pre>object({<br/>    enabled        = bool<br/>    bucket_arn     = string<br/>    lock_table_arn = string<br/>  })</pre> | <pre>{<br/>  "bucket_arn": "",<br/>  "enabled": true,<br/>  "lock_table_arn": ""<br/>}</pre> | no |
@@ -164,7 +190,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | ARN of the OIDC provider |
 | <a name="output_oidc_provider_url"></a> [oidc\_provider\_url](#output\_oidc\_provider\_url) | URL of the OIDC provider |
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the CI/CD IAM role |
