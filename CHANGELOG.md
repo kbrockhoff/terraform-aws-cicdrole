@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/kbrockhoff/terraform-aws-cicdrole/compare/v0.1.0...v0.2.0) (2026-10-16)
+
+
+### Features
+
+* **github-actions:** support immutable OIDC subject claims ([95d9742](https://github.com/kbrockhoff/terraform-aws-cicdrole/commit/95d9742bf87d87c6f944fe83698a02ac4dca9000))
+* **s3-backend:** support S3 native state locking (use_lockfile) ([0cfab15](https://github.com/kbrockhoff/terraform-aws-cicdrole/commit/0cfab1517ff3bcff1695163f44b1999e04e2ddf4))
+
 ## 0.1.0 (2025-08-20)
 
 
