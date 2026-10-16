@@ -148,15 +148,17 @@ variable "assume_role_policy" {
 # ----
 
 variable "s3_backend_config" {
-  description = "Configuration for Terraform S3 backend access permissions"
+  description = "Configuration for Terraform S3 backend access permissions. Set use_lockfile = true when the backend uses S3 native state locking (use_lockfile); DynamoDB permissions are then only granted if lock_table_arn is also set (e.g., while migrating)"
   type = object({
     enabled        = bool
     bucket_arn     = string
-    lock_table_arn = string
+    lock_table_arn = optional(string, "")
+    use_lockfile   = optional(bool, false)
   })
   default = {
     enabled        = true
     bucket_arn     = ""
     lock_table_arn = ""
+    use_lockfile   = false
   }
 }

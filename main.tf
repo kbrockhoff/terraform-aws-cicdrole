@@ -145,6 +145,7 @@ data "aws_iam_policy_document" "terraform_backend" {
     ]
   }
 
+  # Also covers the "<key>.tflock" lock objects used by S3 native state locking (use_lockfile)
   statement {
     sid    = "TerraformS3BackendS3StateFiles"
     effect = "Allow"
@@ -162,22 +163,26 @@ data "aws_iam_policy_document" "terraform_backend" {
     ]
   }
 
-  statement {
-    sid    = "TerraformS3BackendDynamoDBLockTable"
-    effect = "Allow"
+  dynamic "statement" {
+    for_each = local.grant_dynamodb_lock_table ? [1] : []
 
-    actions = [
-      "dynamodb:DescribeTable",
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:DeleteItem",
-    ]
+    content {
+      sid    = "TerraformS3BackendDynamoDBLockTable"
+      effect = "Allow"
 
-    resources = var.s3_backend_config.lock_table_arn != "" ? [
-      var.s3_backend_config.lock_table_arn
-      ] : [
-      "arn:${local.partition}:dynamodb:*:${local.account_id}:table/*-terraform-locks"
-    ]
+      actions = [
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+      ]
+
+      resources = var.s3_backend_config.lock_table_arn != "" ? [
+        var.s3_backend_config.lock_table_arn
+        ] : [
+        "arn:${local.partition}:dynamodb:*:${local.account_id}:table/*-terraform-locks"
+      ]
+    }
   }
 }
 

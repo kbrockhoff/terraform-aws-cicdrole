@@ -92,7 +92,8 @@ variable "s3_backend_config" {
   type = object({
     enabled        = bool
     bucket_arn     = string
-    lock_table_arn = string
+    lock_table_arn = optional(string, "")
+    use_lockfile   = optional(bool, false)
   })
   default = {
     enabled        = true

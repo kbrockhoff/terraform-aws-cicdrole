@@ -65,6 +65,20 @@ module "github_actions_role" {
 - `both`: trusts legacy and immutable claims; use while repositories migrate
 - `immutable`: trusts only `repo:<org>@<org_id>/<repo>@<repo_id>:...`; a repo without `@<repo_id>` matches any repository ID under the pinned owner ID
 
+### Terraform S3 Backend with Native State Locking
+
+When the S3 backend uses `use_lockfile = true`, set `use_lockfile` in `s3_backend_config`. The
+lock object (`<key>.tflock`) is covered by the state bucket object permissions, so DynamoDB
+permissions are omitted. Keep `lock_table_arn` set while migrating from DynamoDB locking to grant both.
+
+```hcl
+  s3_backend_config = {
+    enabled      = true
+    bucket_arn   = "arn:aws:s3:::my-terraform-state"
+    use_lockfile = true
+  }
+```
+
 ### Jenkins with SAML Authentication
 ```hcl
 # Custom assume role policy for Jenkins using SAML authentication
@@ -184,7 +198,7 @@ No modules.
 | <a name="input_github_subject_format"></a> [github\_subject\_format](#input\_github\_subject\_format) | GitHub Actions OIDC subject claim format to trust. 'legacy' matches 'repo:org/repo:...', 'immutable' matches 'repo:org@orgid/repo@repoid:...', 'both' matches either (use while migrating). Only used when cicd\_provider is 'github-actions' | `string` | `"legacy"` | no |
 | <a name="input_manage_oidc_provider"></a> [manage\_oidc\_provider](#input\_manage\_oidc\_provider) | Whether to manage (import) an existing OIDC provider. Takes precedence over create\_oidc\_provider | `bool` | `false` | no |
 | <a name="input_oidc_provider_arn"></a> [oidc\_provider\_arn](#input\_oidc\_provider\_arn) | ARN of an existing OIDC provider. Required if create\_oidc\_provider is false | `string` | `""` | no |
-| <a name="input_s3_backend_config"></a> [s3\_backend\_config](#input\_s3\_backend\_config) | Configuration for Terraform S3 backend access permissions | <pre>object({<br/>    enabled        = bool<br/>    bucket_arn     = string<br/>    lock_table_arn = string<br/>  })</pre> | <pre>{<br/>  "bucket_arn": "",<br/>  "enabled": true,<br/>  "lock_table_arn": ""<br/>}</pre> | no |
+| <a name="input_s3_backend_config"></a> [s3\_backend\_config](#input\_s3\_backend\_config) | Configuration for Terraform S3 backend access permissions. Set use\_lockfile = true when the backend uses S3 native state locking (use\_lockfile); DynamoDB permissions are then only granted if lock\_table\_arn is also set (e.g., while migrating) | <pre>object({<br/>    enabled        = bool<br/>    bucket_arn     = string<br/>    lock_table_arn = optional(string, "")<br/>    use_lockfile   = optional(bool, false)<br/>  })</pre> | <pre>{<br/>  "bucket_arn": "",<br/>  "enabled": true,<br/>  "lock_table_arn": "",<br/>  "use_lockfile": false<br/>}</pre> | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags/labels to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs

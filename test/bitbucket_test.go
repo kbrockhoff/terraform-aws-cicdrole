@@ -45,6 +45,31 @@ func TestTerraformBitbucketExample(t *testing.T) {
 
 }
 
+func TestS3BackendUseLockfile(t *testing.T) {
+	t.Parallel()
+	expectedName := generateTestNamePrefix("bbl")
+
+	terraformOptions := &terraform.Options{
+		TerraformDir: "../examples/bitbucket",
+		Vars: map[string]interface{}{
+			"name_prefix":      expectedName,
+			"environment_type": "None",
+			"s3_backend_config": map[string]interface{}{
+				"enabled":      true,
+				"bucket_arn":   "arn:aws:s3:::bkff-tfstate-123456789012",
+				"use_lockfile": true,
+			},
+		},
+	}
+
+	terraform.Init(t, terraformOptions)
+	planOutput := terraform.Plan(t, terraformOptions)
+
+	// S3 native locking needs only the state bucket object permissions, not DynamoDB
+	assert.Contains(t, planOutput, "TerraformS3BackendS3StateFiles")
+	assert.NotContains(t, planOutput, "TerraformS3BackendDynamoDBLockTable")
+}
+
 func TestEnabledFalse(t *testing.T) {
 	t.Parallel()
 	expectedName := generateTestNamePrefix("bb")

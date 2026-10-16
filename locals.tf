@@ -188,6 +188,10 @@ locals {
     }
   }
 
+  # DynamoDB locking is needed unless S3 native locking is used; an explicit
+  # lock table is still granted alongside use_lockfile to support migration
+  grant_dynamodb_lock_table = !var.s3_backend_config.use_lockfile || var.s3_backend_config.lock_table_arn != ""
+
   # Use cicd_provider_org if provided, otherwise fall back to git_provider_org
   cicd_provider_org = var.cicd_provider_org != "" ? var.cicd_provider_org : var.git_provider_org
 
