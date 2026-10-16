@@ -31,12 +31,15 @@ jobs:
     - name: Terraform Format Check
       run: terraform fmt -check -recursive
 
+    # Checkov scans source, not Terraform behavior, so run it once per workflow
     - name: Setup Checkov
+      if: matrix.terraform_version == 'latest'
       run: |
         python -m pip install --upgrade pip
         pip install checkov
 
     - name: Run Checkov Security Scan
+      if: matrix.terraform_version == 'latest'
       run: |
         checkov --framework terraform \
                 --directory . \
@@ -47,8 +50,9 @@ jobs:
                 --quiet
       continue-on-error: false
 
+    # always() so findings are published even when the scan fails; skip if the scan never ran
     - name: Upload Checkov SARIF results
-      if: matrix.terraform_version != 'latest'
+      if: always() && matrix.terraform_version == 'latest' && hashFiles('checkov-report.sarif') != ''
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: checkov-report.sarif
