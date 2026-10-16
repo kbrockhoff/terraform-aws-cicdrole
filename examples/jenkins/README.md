@@ -106,7 +106,7 @@ The created role trusts SAML assertions with:
 - AWS SAML identity provider already configured
 - Jenkins with SAML plugin installed and configured
 - AWS credentials with permissions to create IAM roles and policies
-- Terraform >= 1.5
+- Terraform >= 1.11
 
 ## References
 

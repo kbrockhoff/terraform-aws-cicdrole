@@ -65,7 +65,7 @@ If `deployment_environment` is empty, it will match all workspaces:
 
 - Terraform Cloud organization
 - AWS credentials with permissions to create IAM roles and OIDC providers
-- Terraform >= 1.5
+- Terraform >= 1.11
 
 ## References
 

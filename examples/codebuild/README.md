@@ -46,4 +46,4 @@ service_role: <output_role_arn>
 ## Requirements
 
 - AWS credentials with permissions to create IAM roles and policies
-- Terraform >= 1.5
+- Terraform >= 1.11
