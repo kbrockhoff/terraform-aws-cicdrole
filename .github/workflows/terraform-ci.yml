@@ -54,20 +54,23 @@ jobs:
         sarif_file: checkov-report.sarif
         category: checkov
 
-    # Uncomment in actual module
-    # - name: Setup TFLint
-    #   uses: terraform-linters/setup-tflint@v4
-    #   with:
-    #     tflint_version: v0.58.1
+    - name: Setup TFLint
+      uses: terraform-linters/setup-tflint@v4
+      with:
+        tflint_version: v0.64.0
 
-    # - name: Show TFLint version
-    #   run: tflint --version
+    - name: Show TFLint version
+      run: tflint --version
 
-    # - name: Init TFLint
-    #   run: tflint --init
+    - name: Init TFLint
+      run: tflint --init
+      env:
+        # Avoid GitHub API rate limits when downloading the AWS ruleset plugin
+        GITHUB_TOKEN: ${{ github.token }}
 
-    # - name: Run TFLint
-    #   run: tflint -f compact
+    # Matches `make lint`
+    - name: Run TFLint
+      run: tflint --recursive -f compact
 
     # Root module validation skipped - requires provider configuration
     # Root module is designed to be used as a module with providers passed in
@@ -75,6 +78,8 @@ jobs:
     - name: Terraform Init (Modules)
       run: |
         for module in modules/*/; do
+          # Skip when the repository has no submodules (glob stays unexpanded)
+          [ -d "$module" ] || continue
           echo "Initializing $module"
           cd "$module"
           terraform init -backend=false
@@ -84,11 +89,14 @@ jobs:
     - name: Terraform Validate (Modules)
       run: |
         for module in modules/*/; do
+          # Skip when the repository has no submodules (glob stays unexpanded)
+          [ -d "$module" ] || continue
           echo "Validating $module"
           cd "$module"
           terraform validate
           cd - > /dev/null
         done
+
     - name: Terraform Init (Examples)
       run: |
         for example in examples/*/; do
