@@ -15,7 +15,7 @@ func TestTerraformGitHubActionsExample(t *testing.T) {
 
 	terraformOptions := &terraform.Options{
 		// The path to where our Terraform code is located
-		TerraformDir: "../examples/github-actions",
+		TerraformDir: isolatedExampleDir(t, "github-actions"),
 
 		// Variables to pass to our Terraform code using -var options
 		Vars: map[string]interface{}{
@@ -58,7 +58,7 @@ func TestTerraformGitHubActionsImmutableSubjectOnly(t *testing.T) {
 	expectedName := generateTestNamePrefix("ghi")
 
 	terraformOptions := &terraform.Options{
-		TerraformDir: "../examples/github-actions",
+		TerraformDir: isolatedExampleDir(t, "github-actions"),
 		Vars: map[string]interface{}{
 			"name_prefix":           expectedName,
 			"github_subject_format": "immutable",
@@ -79,7 +79,7 @@ func TestTerraformGitHubActionsImmutableSubjectRequiresOrgID(t *testing.T) {
 	expectedName := generateTestNamePrefix("ghx")
 
 	terraformOptions := &terraform.Options{
-		TerraformDir: "../examples/github-actions",
+		TerraformDir: isolatedExampleDir(t, "github-actions"),
 		Vars: map[string]interface{}{
 			"name_prefix":           expectedName,
 			"github_subject_format": "immutable",

@@ -13,7 +13,7 @@ func TestTerraformCloudExample(t *testing.T) {
 
 	testName := generateTestNamePrefix("tfc")
 
-	terraformOptions := getBaseTerraformOptions("../examples/terraform-cloud")
+	terraformOptions := getBaseTerraformOptions(isolatedExampleDir(t, "terraform-cloud"))
 	terraformOptions.Vars = map[string]interface{}{
 		"name_prefix": testName,
 	}
@@ -52,7 +52,7 @@ func TestTerraformCloudWithEnvironment(t *testing.T) {
 
 	testName := generateTestNamePrefix("tfc")
 
-	terraformOptions := getBaseTerraformOptions("../examples/terraform-cloud")
+	terraformOptions := getBaseTerraformOptions(isolatedExampleDir(t, "terraform-cloud"))
 	terraformOptions.Vars = map[string]interface{}{
 		"name_prefix":            testName,
 		"deployment_environment": "production",

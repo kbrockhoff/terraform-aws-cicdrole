@@ -13,7 +13,7 @@ func TestTerraformBitbucketExample(t *testing.T) {
 
 	terraformOptions := &terraform.Options{
 		// The path to where our Terraform code is located
-		TerraformDir: "../examples/bitbucket",
+		TerraformDir: isolatedExampleDir(t, "bitbucket"),
 
 		// Variables to pass to our Terraform code using -var options
 		Vars: map[string]interface{}{
@@ -50,7 +50,7 @@ func TestS3BackendUseLockfile(t *testing.T) {
 	expectedName := generateTestNamePrefix("bbl")
 
 	terraformOptions := &terraform.Options{
-		TerraformDir: "../examples/bitbucket",
+		TerraformDir: isolatedExampleDir(t, "bitbucket"),
 		Vars: map[string]interface{}{
 			"name_prefix":      expectedName,
 			"environment_type": "None",
@@ -76,7 +76,7 @@ func TestEnabledFalse(t *testing.T) {
 
 	terraformOptions := &terraform.Options{
 		// The path to where our Terraform code is located
-		TerraformDir: "../examples/bitbucket",
+		TerraformDir: isolatedExampleDir(t, "bitbucket"),
 
 		// Variables to pass to our Terraform code using -var options
 		Vars: map[string]interface{}{

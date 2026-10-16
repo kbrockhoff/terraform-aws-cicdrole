@@ -16,7 +16,7 @@ func TestJenkinsExample(t *testing.T) {
 	// Jenkins uses SAML, so we need to provide a mock ARN
 	mockSamlArn := "arn:aws:iam::123456789012:saml-provider/jenkins-saml"
 
-	terraformOptions := getBaseTerraformOptions("../examples/jenkins")
+	terraformOptions := getBaseTerraformOptions(isolatedExampleDir(t, "jenkins"))
 	terraformOptions.Vars = map[string]interface{}{
 		"name_prefix":       testName,
 		"saml_provider_arn": mockSamlArn,
