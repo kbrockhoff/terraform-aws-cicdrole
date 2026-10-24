@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/kbrockhoff/terraform-aws-cicdrole/compare/v0.1.0...v0.2.0) (2026-10-24)
+
+
+### Features
+
+* **github-actions:** support immutable OIDC subject claims ([95d9742](https://github.com/kbrockhoff/terraform-aws-cicdrole/commit/95d9742bf87d87c6f944fe83698a02ac4dca9000))
+* **s3-backend:** support S3 native state locking (use_lockfile) ([0cfab15](https://github.com/kbrockhoff/terraform-aws-cicdrole/commit/0cfab1517ff3bcff1695163f44b1999e04e2ddf4))
+
+
+### Bug Fixes
+
+* **vscode:** point agent instruction settings at AGENTS.md ([335a400](https://github.com/kbrockhoff/terraform-aws-cicdrole/commit/335a4004f108bb07c0e2f35ad85da6edda25607a))
+
 ## 0.1.0 (2025-08-20)
 
 
