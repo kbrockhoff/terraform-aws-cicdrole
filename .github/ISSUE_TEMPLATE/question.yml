@@ -33,7 +33,7 @@ body:
       description: If applicable, share your current Terraform configuration
       render: hcl
       placeholder: |
-        module "vpc" {
+        module "this" {
           source = "..."
           # your configuration
         }

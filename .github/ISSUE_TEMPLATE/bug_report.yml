@@ -54,7 +54,7 @@ body:
       description: Minimal Terraform configuration that reproduces the issue
       render: hcl
       placeholder: |
-        module "vpc" {
+        module "this" {
           source = "..."
           # configuration here
         }
